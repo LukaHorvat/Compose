@@ -5,8 +5,7 @@
            , OverlappingInstances
            , UndecidableInstances
            , ScopedTypeVariables
-           , TypeOperators 
-           , PatternSynonyms #-}
+           , TypeOperators #-}
 module Components where
 
 data Entity c = Entity c
@@ -25,6 +24,12 @@ instance HasComponent a n => HasComponent a (CompNode b n) where
 
 instance HasComponent a b => HasComponent a (Entity b) where
     getComponent (Entity b) = getComponent b
+
+data True
+data False
+
+class Elem x xs b | x xs -> b where
+    elem :: x -> xs -> b
 
 data DisplayData a = DisplayData a
 data Displayer a = Displayer (a -> IO ())
