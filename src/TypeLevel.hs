@@ -3,7 +3,8 @@
            , FlexibleContexts
            , UndecidableInstances
            , DeriveDataTypeable
-           , OverlappingInstances #-}
+           , OverlappingInstances
+           , TypeFamilies #-}
 module TypeLevel where
 
 import Data.Typeable
@@ -123,3 +124,62 @@ instance (Compare x y c, Is c GT b) => Gt x y b
 instance (Compare x y c, Isnt c GT b) => Leq x y b
 instance (Compare x y c, Isnt c LT b) => Geq x y b
 instance (Compare x y c, Isnt c EQ b) => Neq x y b
+
+compare :: (Compare x y c) => x -> y -> c
+compare = undefined
+
+eq :: (Eq x y b) => x -> y -> b
+eq = undefined
+
+lt :: (Lt x y b) => x -> y -> b
+lt = undefined
+
+gt :: (Gt x y b) => x -> y -> b
+gt = undefined
+
+leq :: (Leq x y b) => x -> y -> b
+leq = undefined
+
+geq :: (Geq x y b) => x -> y -> b
+geq = undefined
+
+neq :: (Neq x y b) => x -> y -> b
+neq = undefined
+
+class Inc x y | x -> y
+instance Inc x (Succ x)
+
+class Choose b x y z | b x y -> z
+instance Choose True  x y x
+instance Choose False x y y
+
+class Over' x y acc z | x y acc -> z
+instance Over' x y x Zero
+instance (Plus acc y acc2, Gt acc2 x b, Choose b x acc2 acc3, Over' x y acc3 z1, Inc z1 z2) => Over' x y acc z2
+
+class Over x y z | x y -> z
+instance Over' x y Zero z => Over x y z
+
+inc :: (Inc x y) => x -> y
+inc = undefined
+
+over :: (Over x y z) => x -> y -> z
+over = undefined
+
+data Nil      deriving Typeable
+data Cons a b deriving Typeable
+
+class Append xs ys zs | xs ys -> zs
+instance Append Nil xs xs
+instance Append xs ys zs => Append (Cons x xs) ys (Cons x zs)
+
+class Elem x xs b | x xs -> b
+instance Elem x Nil         False
+instance Elem x (Cons x xs) True
+instance Elem x ys b => Elem x (Cons y ys) b
+
+append :: (Append xs ys zs) => xs -> ys -> zs
+append = undefined
+
+elem :: (Elem x xs b) => x -> xs -> b
+elem = undefined

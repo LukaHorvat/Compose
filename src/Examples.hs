@@ -2,7 +2,7 @@ module Examples where
 
 import Data.Typeable
 import TypeLevel
-import Prelude hiding (and)
+import Prelude hiding (and, elem)
 
 u :: a
 u = undefined
