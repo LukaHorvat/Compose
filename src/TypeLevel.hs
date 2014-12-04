@@ -4,11 +4,12 @@
            , UndecidableInstances
            , DeriveDataTypeable
            , OverlappingInstances
-           , TypeFamilies #-}
+           , TypeFamilies 
+           , AllowAmbiguousTypes #-}
 module TypeLevel where
 
 import Data.Typeable
-import Prelude hiding (Eq, Bool, Ordering)
+import Prelude hiding (Eq, Bool, Ordering, mod)
 
 data True  deriving Typeable
 data False deriving Typeable
@@ -93,8 +94,15 @@ class (Nat x, Nat y, Nat z) => Times x y z | x y -> z
 instance Nat x => Times Zero x Zero
 instance (Times x y z1, Plus y z1 z2) => Times (Succ x) y z2
 
+class (Nat x, Nat y, Nat acc, Nat z) => Minus' x y acc z | x y acc -> z
+instance (Nat x, Nat acc) => Minus' x x acc acc
+instance (Nat acc, Gt x y True, Minus' x (Succ y) (Succ acc) z) => Minus' x y acc z
+
+class (Nat x, Nat y, Nat z) => UnsafeMinus x y z | x y -> z
+instance Minus' x y Zero z => UnsafeMinus x y z 
+
 class (Nat x, Nat y, Nat z) => Minus x y z | y z -> x
-instance Plus x y z => Minus z x y 
+instance Plus x y z => Minus z y x 
 
 plus :: (Plus x y z) => x -> y -> z
 plus = undefined
@@ -110,10 +118,13 @@ instance Equal x x True
 instance Not True b => Equal x y b
 
 class Bool b => NotEqual x y b | x y -> b
-instance (Equal x y b1, Not b1 b2) => NotEqual x y b1
+instance (Equal x y b1, Not b1 b2) => NotEqual x y b2
 
 equal :: (Equal x y b) => x -> y -> b
 equal = undefined
+
+notEqual :: (NotEqual x y b) => x -> y -> b
+notEqual = undefined
 
 data EQ deriving Typeable
 data GT deriving Typeable
@@ -211,3 +222,23 @@ append = undefined
 elem :: (Elem x xs b) => x -> xs -> b
 elem = undefined
 
+class (Nat x, Nat y, Bool f, Nat z) => Mod' x y f z | x y f -> z
+instance (Nat x, Nat y) => Mod' x y True x
+instance (UnsafeMinus x y z1, Lt z1 y b, Mod' z1 y b z2) => Mod' x y False z2
+
+class (Nat x, Nat y, Nat z) => Mod x y z | x y -> z
+instance (Lt x y b, Mod' x y b z) => Mod x y z
+
+mod :: (Mod x y z) => x -> y -> z
+mod = undefined
+
+class (Nat x, Nat y, Bool b) => Prime' x y b | x y -> b
+instance Nat x => Prime' x x True
+instance (Mod x y z, NotEqual z Zero b1, Prime' x (Succ y) b2, And b1 b2 b3) => Prime' x y b3
+
+class (Nat x, Bool b) => Prime x b | x -> b
+instance Prime One True
+instance Prime' x Two b => Prime x b
+
+prime :: (Prime x b) => x -> b
+prime = undefined
