@@ -45,7 +45,7 @@ class (Bool x, Bool y, Bool b) => Isnt x y b | x y -> b
 instance (Is x y b1, Not b1 b2) => Isnt x y b2
 
 class (Bool x, Bool y, Bool b) => Xor x y b | x y -> b
-instance (Or x y b1, And x y b2, Not b2 b3, And b1 b3 b4) => Xor x y b4
+instance Isnt x y b => Xor x y b
 
 is :: (Is x y b) => x -> y -> b
 is = undefined
@@ -210,3 +210,4 @@ append = undefined
 
 elem :: (Elem x xs b) => x -> xs -> b
 elem = undefined
+
