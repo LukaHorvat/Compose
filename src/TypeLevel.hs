@@ -5,11 +5,12 @@
            , DeriveDataTypeable
            , OverlappingInstances
            , TypeFamilies 
-           , AllowAmbiguousTypes #-}
+           , AllowAmbiguousTypes
+           , KindSignatures #-}
 module TypeLevel where
 
 import Data.Typeable
-import Prelude hiding (Eq, Bool, Ordering, mod)
+import Prelude hiding (Eq, Bool, Ordering, mod, filter)
 
 data True  deriving Typeable
 data False deriving Typeable
@@ -66,8 +67,8 @@ xor = undefined
 isnt :: (Isnt x y b) => x -> y -> b
 isnt = undefined
 
-data Zero   deriving Typeable
-data Succ a deriving Typeable
+data Zero   = Zero   deriving Typeable
+data Succ a = Succ a deriving Typeable
 
 class Nat' a
 class Nat' a => Nat a
@@ -85,6 +86,17 @@ type Seven = Succ Six
 type Eight = Succ Seven
 type Nine  = Succ Eight
 type Ten   = Succ Nine
+
+one   = Succ Zero
+two   = Succ one
+three = Succ two
+four  = Succ three
+five  = Succ four
+six   = Succ five
+seven = Succ six
+eight = Succ seven
+nine  = Succ eight
+ten   = Succ nine
 
 class (Nat x, Nat y, Nat z) => Plus x y z | x y -> z
 instance Nat x => Plus Zero x x
@@ -198,8 +210,8 @@ inc = undefined
 over :: (Over x y z) => x -> y -> z
 over = undefined
 
-data Nil      deriving Typeable
-data Cons a b deriving Typeable
+data Nil      = Nil      deriving Typeable
+data Cons a b = Cons a b deriving Typeable
 
 class List' a
 class List' a => List a
@@ -207,20 +219,28 @@ instance List' Nil
 instance List' (Cons a b)
 instance List' a => List a
 
-class (List xs, List ys, List zs) => Append xs ys zs | xs ys -> zs
+class (List xs , List ys, List zs) => Append xs ys zs | xs ys -> zs
 instance List xs => Append Nil xs xs
 instance Append xs ys zs => Append (Cons x xs) ys (Cons x zs)
 
 class (List xs, Bool b) => Elem x xs b | x xs -> b
-instance Elem x Nil         False
-instance Elem x (Cons x xs) True
-instance Elem x ys b => Elem x (Cons y ys) b
+instance Elem x Nil False
+instance (Equal x y b1, Elem x ys b2, Or b1 b2 b3) => Elem x (Cons y ys) b3
 
 append :: (Append xs ys zs) => xs -> ys -> zs
 append = undefined
 
 elem :: (Elem x xs b) => x -> xs -> b
 elem = undefined
+
+class GetElem x xs | xs -> x where
+    getElem :: xs -> x
+
+instance GetElem x (Cons x xs) where
+    getElem (Cons x _) = x
+
+instance GetElem x xs => GetElem x (Cons y xs) where
+    getElem (Cons _ xs) = getElem xs
 
 class (Nat x, Nat y, Bool f, Nat z) => Mod' x y f z | x y f -> z
 instance (Nat x, Nat y) => Mod' x y True x
@@ -242,3 +262,43 @@ instance Prime' x Two b => Prime x b
 
 prime :: (Prime x b) => x -> b
 prime = undefined
+
+class ShowUnwrapped a where
+    showUnwrapped :: a -> String
+instance ShowUnwrapped Nil where
+    showUnwrapped _ = ""
+instance Show a => ShowUnwrapped (Cons a Nil) where
+    showUnwrapped (Cons a _) = show a 
+instance (Show a, ShowUnwrapped b) => ShowUnwrapped (Cons a b) where
+    showUnwrapped (Cons a b) = show a ++ ", " ++ showUnwrapped b 
+
+instance ShowUnwrapped (Cons x xs) => Show (Cons x xs) where
+    show a = "<" ++ showUnwrapped a ++ ">"
+
+class (List xs, Bool b) => Has (f :: * -> *) xs b | f xs -> b
+instance Has f Nil False
+instance Has f (Cons (f a) xs) True
+instance Has f xs b => Has f (Cons x xs) b
+
+class (List xs, List ys) => Filter (f :: * -> *) xs ys | f xs -> ys where
+    filter :: f a -> xs -> ys
+instance Filter f Nil Nil where
+    filter _ Nil = Nil
+instance Filter f xs ys => Filter f (Cons (f a) xs) (Cons (f a) ys) where
+    filter f (Cons x xs) = Cons x (filter f xs)
+instance Filter f xs ys => Filter f (Cons x xs) ys where
+    filter f (Cons _ xs) = filter f xs
+
+class (List xs, Nat i) => Index xs i x | xs i -> x where
+    index :: xs -> i -> x
+instance Index (Cons x xs) Zero x where
+    index (Cons x _) Zero = x
+instance Index xs i y => Index (Cons x xs) (Succ i) y where
+    index (Cons _ xs) (Succ i) = index xs i
+
+class Nat x => ToInt x where
+    toInt :: x -> Int
+instance ToInt Zero where
+    toInt Zero = 0
+instance ToInt x => ToInt (Succ x) where
+    toInt (Succ x) = 1 + toInt x
